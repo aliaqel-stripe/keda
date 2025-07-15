@@ -72,18 +72,18 @@ func checkAnnotation(e event.UpdateEvent, annotation string) bool {
 	newAnnotations := e.ObjectNew.GetAnnotations()
 	oldAnnotations := e.ObjectOld.GetAnnotations()
 
-	newPausedValue := ""
-	oldPausedValue := ""
+	newValue := ""
+	oldValue := ""
 
 	if newAnnotations != nil {
-		newPausedValue = newAnnotations[annotation]
+		newValue = newAnnotations[annotation]
 	}
 
 	if oldAnnotations != nil {
-		oldPausedValue = oldAnnotations[annotation]
+		oldValue = oldAnnotations[annotation]
 	}
 
-	return newPausedValue != oldPausedValue
+	return newValue != oldValue
 }
 
 type HPASpecChangedPredicate struct {
