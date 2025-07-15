@@ -14,25 +14,7 @@ type PausedReplicasPredicate struct {
 }
 
 func (PausedReplicasPredicate) Update(e event.UpdateEvent) bool {
-	if e.ObjectOld == nil || e.ObjectNew == nil {
-		return false
-	}
-
-	newAnnotations := e.ObjectNew.GetAnnotations()
-	oldAnnotations := e.ObjectOld.GetAnnotations()
-
-	newPausedValue := ""
-	oldPausedValue := ""
-
-	if newAnnotations != nil {
-		newPausedValue = newAnnotations[kedav1alpha1.PausedReplicasAnnotation]
-	}
-
-	if oldAnnotations != nil {
-		oldPausedValue = oldAnnotations[kedav1alpha1.PausedReplicasAnnotation]
-	}
-
-	return newPausedValue != oldPausedValue
+	return checkAnnotation(e, kedav1alpha1.PausedReplicasAnnotation)
 }
 
 type ScaleObjectReadyConditionPredicate struct {
@@ -71,6 +53,18 @@ type PausedPredicate struct {
 }
 
 func (PausedPredicate) Update(e event.UpdateEvent) bool {
+	return checkAnnotation(e, kedav1alpha1.PausedAnnotation)
+}
+
+type ForceActivationPredicate struct {
+	predicate.Funcs
+}
+
+func (ForceActivationPredicate) Update(e event.UpdateEvent) bool {
+	return checkAnnotation(e, kedav1alpha1.ForceActivationAnnotation)
+}
+
+func checkAnnotation(e event.UpdateEvent, annotation string) bool {
 	if e.ObjectOld == nil || e.ObjectNew == nil {
 		return false
 	}
@@ -82,11 +76,11 @@ func (PausedPredicate) Update(e event.UpdateEvent) bool {
 	oldPausedValue := ""
 
 	if newAnnotations != nil {
-		newPausedValue = newAnnotations[kedav1alpha1.PausedAnnotation]
+		newPausedValue = newAnnotations[annotation]
 	}
 
 	if oldAnnotations != nil {
-		oldPausedValue = oldAnnotations[kedav1alpha1.PausedAnnotation]
+		oldPausedValue = oldAnnotations[annotation]
 	}
 
 	return newPausedValue != oldPausedValue
