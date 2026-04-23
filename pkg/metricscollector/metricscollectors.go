@@ -17,6 +17,7 @@ limitations under the License.
 package metricscollector
 
 import (
+	"sync/atomic"
 	"time"
 
 	grpcprom "github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
@@ -33,8 +34,10 @@ const (
 )
 
 var (
-	collectors        []MetricsCollector
-	promServerMetrics *grpcprom.ServerMetrics
+	collectors                            []MetricsCollector
+	promServerMetrics                     *grpcprom.ServerMetrics
+	httpClientPrometheusMetricsEnabled    atomic.Bool
+	httpClientOpenTelemetryMetricsEnabled atomic.Bool
 )
 
 type MetricsCollector interface {
@@ -82,6 +85,8 @@ type MetricsCollector interface {
 }
 
 func NewMetricsCollectors(enablePrometheusMetrics bool, enableOpenTelemetryMetrics bool) {
+	ConfigureHTTPClientMetricsInstrumentation(enablePrometheusMetrics, enableOpenTelemetryMetrics)
+
 	if enablePrometheusMetrics {
 		promometrics := NewPromMetrics()
 		collectors = append(collectors, promometrics)
@@ -95,6 +100,19 @@ func NewMetricsCollectors(enablePrometheusMetrics bool, enableOpenTelemetryMetri
 		otelmetrics := NewOtelMetrics()
 		collectors = append(collectors, otelmetrics)
 	}
+}
+
+func ConfigureHTTPClientMetricsInstrumentation(enablePrometheusMetrics bool, enableOpenTelemetryMetrics bool) {
+	httpClientPrometheusMetricsEnabled.Store(enablePrometheusMetrics)
+	httpClientOpenTelemetryMetricsEnabled.Store(enableOpenTelemetryMetrics)
+}
+
+func HTTPClientPrometheusMetricsEnabled() bool {
+	return httpClientPrometheusMetricsEnabled.Load()
+}
+
+func HTTPClientOpenTelemetryMetricsEnabled() bool {
+	return httpClientOpenTelemetryMetricsEnabled.Load()
 }
 
 // RecordScalerMetric create a measurement of the external metric used by the HPA

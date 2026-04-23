@@ -20,6 +20,8 @@ import (
 	"crypto/tls"
 	"net/http"
 	"time"
+
+	"github.com/kedacore/keda/v2/pkg/metricscollector"
 )
 
 var disableKeepAlives bool
@@ -50,7 +52,7 @@ func CreateHTTPClient(timeout time.Duration, unsafeSsl bool) *http.Client {
 	if timeout <= 0 {
 		timeout = 300 * time.Millisecond
 	}
-	transport := CreateHTTPTransport(unsafeSsl)
+	transport := CreateRT(unsafeSsl)
 	httpClient := &http.Client{
 		Timeout:   timeout,
 		Transport: transport,
@@ -58,15 +60,15 @@ func CreateHTTPClient(timeout time.Duration, unsafeSsl bool) *http.Client {
 	return httpClient
 }
 
-// CreateHTTPTransport returns a new HTTP Transport with Proxy, Keep alives
-// unsafeSsl parameter allows to avoid tls cert validation if it's required
-func CreateHTTPTransport(unsafeSsl bool) *http.Transport {
-	return CreateHTTPTransportWithTLSConfig(CreateTLSClientConfig(unsafeSsl))
+// CreateRT returns a new instrumented HTTP RoundTripper with Proxy and Keep-alive settings.
+// unsafeSsl parameter allows to avoid tls cert validation if it's required.
+func CreateRT(unsafeSsl bool) http.RoundTripper {
+	return CreateRTWithTLSConfig(CreateTLSClientConfig(unsafeSsl))
 }
 
-// CreateHTTPTransportWithTLSConfig returns a new HTTP Transport with Proxy, Keep alives
-// using given tls.Config
-func CreateHTTPTransportWithTLSConfig(config *tls.Config) *http.Transport {
+// CreateRTWithTLSConfig returns a new instrumented HTTP RoundTripper with Proxy and
+// Keep-alive settings using the given tls.Config.
+func CreateRTWithTLSConfig(config *tls.Config) http.RoundTripper {
 	transport := &http.Transport{
 		TLSClientConfig: config,
 		Proxy:           http.ProxyFromEnvironment,
@@ -76,5 +78,5 @@ func CreateHTTPTransportWithTLSConfig(config *tls.Config) *http.Transport {
 		transport.DisableKeepAlives = true
 		transport.IdleConnTimeout = 100 * time.Second
 	}
-	return transport
+	return metricscollector.NewInstrumentedRoundTripper(transport)
 }

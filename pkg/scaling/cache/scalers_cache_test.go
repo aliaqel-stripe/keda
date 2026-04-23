@@ -21,7 +21,62 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
+	"github.com/kedacore/keda/v2/pkg/metricscollector"
+	"github.com/kedacore/keda/v2/pkg/scalers/scalersconfig"
 )
+
+func TestBuildScalerRequestCtxWithOtelEnabled(t *testing.T) {
+	RegisterTestingT(t)
+	metricscollector.ConfigureHTTPClientMetricsInstrumentation(false, true)
+
+	sb := ScalerBuilder{
+		ScalerConfig: scalersconfig.ScalerConfig{
+			TriggerType:             "prometheus",
+			TriggerName:             "my-trigger",
+			ScalableObjectNamespace: "my-namespace",
+			ScalableObjectName:      "my-scaled-object",
+		},
+	}
+
+	ctx := metricscollector.BuildScalerRequestCtx(context.Background(), sb.ScalerConfig, "my-metric")
+
+	Expect(ctx.Value(metricscollector.ScalerContextKey)).To(Equal("prometheus"))
+	Expect(ctx.Value(metricscollector.TriggerNameContextKey)).To(Equal("my-trigger"))
+	Expect(ctx.Value(metricscollector.MetricNameContextKey)).To(Equal("my-metric"))
+	Expect(ctx.Value(metricscollector.NamespaceContextKey)).To(Equal("my-namespace"))
+	Expect(ctx.Value(metricscollector.ScaledResourceContextKey)).To(Equal("my-scaled-object"))
+
+	labeler, ok := otelhttp.LabelerFromContext(ctx)
+	Expect(ok).To(BeTrue())
+	Expect(labeler.Get()).To(HaveLen(5))
+}
+
+func TestBuildScalerRequestCtxWithOtelDisabled(t *testing.T) {
+	RegisterTestingT(t)
+	metricscollector.ConfigureHTTPClientMetricsInstrumentation(false, false)
+
+	sb := ScalerBuilder{
+		ScalerConfig: scalersconfig.ScalerConfig{
+			TriggerType:             "prometheus",
+			TriggerName:             "my-trigger",
+			ScalableObjectNamespace: "my-namespace",
+			ScalableObjectName:      "my-scaled-object",
+		},
+	}
+
+	ctx := metricscollector.BuildScalerRequestCtx(context.Background(), sb.ScalerConfig, "my-metric")
+
+	Expect(ctx.Value(metricscollector.ScalerContextKey)).To(Equal("prometheus"))
+	Expect(ctx.Value(metricscollector.TriggerNameContextKey)).To(Equal("my-trigger"))
+	Expect(ctx.Value(metricscollector.MetricNameContextKey)).To(Equal("my-metric"))
+	Expect(ctx.Value(metricscollector.NamespaceContextKey)).To(Equal("my-namespace"))
+	Expect(ctx.Value(metricscollector.ScaledResourceContextKey)).To(Equal("my-scaled-object"))
+
+	_, ok := otelhttp.LabelerFromContext(ctx)
+	Expect(ok).To(BeFalse())
+}
 
 func TestEmptyScalersCache(t *testing.T) {
 	RegisterTestingT(t)

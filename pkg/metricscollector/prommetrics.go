@@ -152,6 +152,27 @@ var (
 		},
 		[]string{"namespace"},
 	)
+
+	httpClientRequestsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: DefaultPromMetricsNamespace,
+			Subsystem: "scaler_http",
+			Name:      "requests_total",
+			Help:      "Total number of outbound HTTP requests issued during scaler metric collection.",
+		},
+		[]string{"code", "namespace", "scaled_resource", "scaler", "trigger_name", "metric_name"},
+	)
+
+	httpClientRequestDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: DefaultPromMetricsNamespace,
+			Subsystem: "scaler_http",
+			Name:      "request_duration_seconds",
+			Help:      "Duration in seconds of outbound HTTP requests issued during scaler metric collection.",
+			Buckets:   []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10},
+		},
+		[]string{"code", "scaler"},
+	)
 )
 
 type PromMetrics struct {
@@ -173,6 +194,9 @@ func NewPromMetrics() *PromMetrics {
 
 	metrics.Registry.MustRegister(cloudeventEmitted)
 	metrics.Registry.MustRegister(cloudeventQueueStatus)
+
+	metrics.Registry.MustRegister(httpClientRequestsTotal)
+	metrics.Registry.MustRegister(httpClientRequestDuration)
 
 	RecordBuildInfo()
 	return &PromMetrics{}
@@ -327,6 +351,11 @@ func (p *PromMetrics) RecordCloudEventEmittedError(namespace string, cloudevents
 func (p *PromMetrics) RecordCloudEventQueueStatus(namespace string, value int) {
 	cloudeventQueueStatus.With(prometheus.Labels{"namespace": namespace}).Set(float64(value))
 }
+
+func HTTPClientRequestsCollector() *prometheus.CounterVec { return httpClientRequestsTotal }
+
+func HTTPClientRequestDurationCollector() *prometheus.HistogramVec { return httpClientRequestDuration }
+
 
 // Returns a grpcprom server Metrics object and registers the metrics. The object contains
 // interceptors to chain to the server so that all requests served are observed. Intended to be called
