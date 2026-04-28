@@ -520,7 +520,7 @@ func (o *OtelMetrics) RecordEmptyUpstreamResponse(namespace, scaledResource, tri
 		attribute.Key("scaledResource").String(scaledResource),
 		attribute.Key("triggerName").String(triggerName),
 		attribute.Key("metricName").String(metricName),
-		attribute.Key("resourceType").String(resourceType),
+		attribute.Key("isScaledObject").Bool(resourceType == "ScaledObject"),
 		attribute.Key("ignoreNullValues").Bool(ignoreNullValues),
 	))
 }

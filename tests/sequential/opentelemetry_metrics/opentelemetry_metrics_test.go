@@ -1386,7 +1386,7 @@ func testEmptyUpstreamResponse(t *testing.T, data templateData) {
 				ExtractPrometheusLabelValue("scaledResource", labels) == emptyUpstreamScaledObjectName &&
 				ExtractPrometheusLabelValue("triggerName", labels) == "empty-upstream-trigger" &&
 				ExtractPrometheusLabelValue("metricName", labels) == "s0-prometheus" &&
-				ExtractPrometheusLabelValue("resourceType", labels) == "ScaledObject" &&
+				ExtractPrometheusLabelValue("isScaledObject", labels) == "true" &&
 				ExtractPrometheusLabelValue("ignoreNullValues", labels) == "false" &&
 				metric.GetCounter().GetValue() >= 1 {
 				found = true
