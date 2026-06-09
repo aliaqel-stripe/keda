@@ -253,6 +253,10 @@ func (so *ScaledObject) NeedToBePausedByAnnotation() bool {
 
 // NeedToPauseScaleIn checks whether Scale In actions for a ScaledObject need to be blocked based on the PausedScaleIn annotation
 func (so *ScaledObject) NeedToPauseScaleIn() bool {
+	if so.NeedToBePausedByAnnotation() {
+		return false
+	}
+
 	return getBoolAnnotation(so, PausedScaleInAnnotation)
 }
 
@@ -263,6 +267,10 @@ func (so *ScaledObject) NeedToForceActivation() bool {
 
 // NeedToPauseScaleOut checks whether Scale Out actions for a ScaledObject need to be blocked based on the PausedScaleOut annotation
 func (so *ScaledObject) NeedToPauseScaleOut() bool {
+	if so.NeedToBePausedByAnnotation() {
+		return false
+	}
+
 	return getBoolAnnotation(so, PausedScaleOutAnnotation)
 }
 

@@ -82,6 +82,7 @@ To learn more about active deprecations, we recommend checking [GitHub Discussio
 
 ### Fixes
 
+- **General**: Prioritize full ScaledObject pause annotations over directional pause annotations ([#7848](https://github.com/kedacore/keda/issues/7848))
 - TODO ([#XXX](https://github.com/kedacore/keda/issues/XXX))
 
 ### Deprecations

@@ -413,6 +413,122 @@ func TestNeedToBePausedByAnnotation(t *testing.T) {
 	}
 }
 
+func TestNeedToPauseScaleIn(t *testing.T) {
+	tests := []struct {
+		name         string
+		annotations  map[string]string
+		expectResult bool
+	}{
+		{
+			name:         "No annotations",
+			annotations:  nil,
+			expectResult: false,
+		},
+		{
+			name:         "PausedScaleInAnnotation with true value",
+			annotations:  map[string]string{PausedScaleInAnnotation: "true"},
+			expectResult: true,
+		},
+		{
+			name:         "PausedScaleInAnnotation with false value",
+			annotations:  map[string]string{PausedScaleInAnnotation: "false"},
+			expectResult: false,
+		},
+		{
+			name:         "PausedScaleInAnnotation with invalid value",
+			annotations:  map[string]string{PausedScaleInAnnotation: "invalid"},
+			expectResult: true,
+		},
+		{
+			name:         "PausedAnnotation with true value takes precedence over PausedScaleInAnnotation",
+			annotations:  map[string]string{PausedAnnotation: "true", PausedScaleInAnnotation: "true"},
+			expectResult: false,
+		},
+		{
+			name:         "PausedReplicasAnnotation takes precedence over PausedScaleInAnnotation",
+			annotations:  map[string]string{PausedReplicasAnnotation: "5", PausedScaleInAnnotation: "true"},
+			expectResult: false,
+		},
+		{
+			name:         "PausedAnnotation with false value does not take precedence over PausedScaleInAnnotation",
+			annotations:  map[string]string{PausedAnnotation: "false", PausedScaleInAnnotation: "true"},
+			expectResult: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			so := &ScaledObject{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: test.annotations,
+				},
+			}
+			result := so.NeedToPauseScaleIn()
+			if result != test.expectResult {
+				t.Errorf("Expected NeedToPauseScaleIn to return %v, got %v", test.expectResult, result)
+			}
+		})
+	}
+}
+
+func TestNeedToPauseScaleOut(t *testing.T) {
+	tests := []struct {
+		name         string
+		annotations  map[string]string
+		expectResult bool
+	}{
+		{
+			name:         "No annotations",
+			annotations:  nil,
+			expectResult: false,
+		},
+		{
+			name:         "PausedScaleOutAnnotation with true value",
+			annotations:  map[string]string{PausedScaleOutAnnotation: "true"},
+			expectResult: true,
+		},
+		{
+			name:         "PausedScaleOutAnnotation with false value",
+			annotations:  map[string]string{PausedScaleOutAnnotation: "false"},
+			expectResult: false,
+		},
+		{
+			name:         "PausedScaleOutAnnotation with invalid value",
+			annotations:  map[string]string{PausedScaleOutAnnotation: "invalid"},
+			expectResult: true,
+		},
+		{
+			name:         "PausedAnnotation with true value takes precedence over PausedScaleOutAnnotation",
+			annotations:  map[string]string{PausedAnnotation: "true", PausedScaleOutAnnotation: "true"},
+			expectResult: false,
+		},
+		{
+			name:         "PausedReplicasAnnotation takes precedence over PausedScaleOutAnnotation",
+			annotations:  map[string]string{PausedReplicasAnnotation: "5", PausedScaleOutAnnotation: "true"},
+			expectResult: false,
+		},
+		{
+			name:         "PausedAnnotation with false value does not take precedence over PausedScaleOutAnnotation",
+			annotations:  map[string]string{PausedAnnotation: "false", PausedScaleOutAnnotation: "true"},
+			expectResult: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			so := &ScaledObject{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: test.annotations,
+				},
+			}
+			result := so.NeedToPauseScaleOut()
+			if result != test.expectResult {
+				t.Errorf("Expected NeedToPauseScaleOut to return %v, got %v", test.expectResult, result)
+			}
+		})
+	}
+}
+
 func TestIsUsingModifiers(t *testing.T) {
 	tests := []struct {
 		name         string
