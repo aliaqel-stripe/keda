@@ -27,6 +27,10 @@ import (
 )
 
 const (
+	// HTTPDisableKeepAliveEnvVar is deprecated in favor of the
+	// --http-disable-keep-alive operator flag and will be removed in v2.23.
+	HTTPDisableKeepAliveEnvVar = "KEDA_HTTP_DISABLE_KEEP_ALIVE"
+
 	defaultHTTPMaxIdleConns        = 0
 	defaultHTTPMaxIdleConnsPerHost = 1000
 	defaultHTTPIdleConnTimeout     = 90 * time.Second
@@ -37,6 +41,7 @@ type HTTPTransportConfig struct {
 	MaxIdleConns        int
 	MaxIdleConnsPerHost int
 	IdleConnTimeout     time.Duration
+	DisableKeepAlives   bool
 }
 
 type httpTransportConfigState struct {
@@ -75,22 +80,18 @@ func defaultHTTPTransportConfig() HTTPTransportConfig {
 		MaxIdleConns:        defaultHTTPMaxIdleConns,
 		MaxIdleConnsPerHost: defaultHTTPMaxIdleConnsPerHost,
 		IdleConnTimeout:     defaultHTTPIdleConnTimeout,
+		DisableKeepAlives:   getKeepAliveValue(),
 	}
 }
 
 var (
-	disableKeepAlives   bool
 	httpTransportConfig = newHTTPTransportConfigState(defaultHTTPTransportConfig())
 	sharedSecureRT      = sync.OnceValue(func() http.RoundTripper { return createSharedRT(false) })
 	sharedInsecureRT    = sync.OnceValue(func() http.RoundTripper { return createSharedRT(true) })
 )
 
-func init() {
-	disableKeepAlives = getKeepAliveValue()
-}
-
 func getKeepAliveValue() bool {
-	if val, err := ResolveOsEnvBool("KEDA_HTTP_DISABLE_KEEP_ALIVE", false); err == nil {
+	if val, err := ResolveOsEnvBool(HTTPDisableKeepAliveEnvVar, false); err == nil {
 		return val
 	}
 	return false
@@ -147,10 +148,10 @@ func createSharedRT(unsafeSsl bool) http.RoundTripper {
 }
 
 func createSharedHTTPTransport(unsafeSsl bool, config HTTPTransportConfig) *http.Transport {
-	transport := createHTTPTransport(CreateTLSClientConfig(unsafeSsl))
+	transport := createHTTPTransport(CreateTLSClientConfig(unsafeSsl), config)
 	transport.MaxIdleConns = config.MaxIdleConns
 	transport.MaxIdleConnsPerHost = config.MaxIdleConnsPerHost
-	if !disableKeepAlives {
+	if !config.DisableKeepAlives {
 		transport.IdleConnTimeout = config.IdleConnTimeout
 	}
 	return transport
@@ -165,15 +166,16 @@ func CreateRT(unsafeSsl bool) http.RoundTripper {
 // CreateRTWithTLSConfig returns a new instrumented HTTP RoundTripper with Proxy and
 // Keep-alive settings using the given tls.Config.
 func CreateRTWithTLSConfig(config *tls.Config) http.RoundTripper {
-	return metricscollector.NewInstrumentedRoundTripper(createHTTPTransport(config))
+	transportConfig := httpTransportConfig.snapshot()
+	return metricscollector.NewInstrumentedRoundTripper(createHTTPTransport(config, transportConfig))
 }
 
-func createHTTPTransport(tlsConfig *tls.Config) *http.Transport {
+func createHTTPTransport(tlsConfig *tls.Config, config HTTPTransportConfig) *http.Transport {
 	transport := &http.Transport{
 		TLSClientConfig: tlsConfig,
 		Proxy:           http.ProxyFromEnvironment,
 	}
-	if disableKeepAlives {
+	if config.DisableKeepAlives {
 		transport.DisableKeepAlives = true
 		transport.IdleConnTimeout = 100 * time.Second
 	}

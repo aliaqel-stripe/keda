@@ -141,11 +141,9 @@ func TestCreateSharedHTTPTransport(t *testing.T) {
 }
 
 func TestCreateSharedHTTPTransportDisablesKeepAlive(t *testing.T) {
-	previousValue := disableKeepAlives
-	disableKeepAlives = true
-	t.Cleanup(func() { disableKeepAlives = previousValue })
-
-	transport := createSharedHTTPTransport(false, defaultHTTPTransportConfig())
+	config := defaultHTTPTransportConfig()
+	config.DisableKeepAlives = true
+	transport := createSharedHTTPTransport(false, config)
 
 	assert.True(t, transport.DisableKeepAlives)
 	assert.Equal(t, 100*time.Second, transport.IdleConnTimeout)

@@ -102,7 +102,7 @@ You can find all deprecations in [this overview](https://github.com/kedacore/ked
 
 New deprecation(s):
 
-- TODO ([#XXX](https://github.com/kedacore/keda/issues/XXX))
+- **General**: Deprecate the `KEDA_HTTP_DISABLE_KEEP_ALIVE` environment variable in favor of the `--http-disable-keep-alive` operator flag; the environment variable will be removed in v2.23 ([#7789](https://github.com/kedacore/keda/issues/7789))
 
 ### Breaking Changes
 
